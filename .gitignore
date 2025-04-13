@@ -1,0 +1,16 @@
+.DS_Store
+.env
+*~
+*.swp
+*.save
+*.bak
+tmp/*
+logs/*
+
+.vscode
+.vim
+webwork2
+pg
+opl
+webwork-open-problem-library
+OPL_data

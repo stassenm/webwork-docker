@@ -1,10 +1,7 @@
-Dockerfile
-logs/*
-tmp/*
-htdocs/tmp/*
-htdocs/DATA/library*.json
-htdocs/DATA/tagging-taxonomy.json
-htdocs/DATA/textbooks-tree.json
-.git
-.data
-.idea
+**/.DS_Store
+**/Dockerfile*
+**/.dockerignore
+*/logs/*
+*/tmp/*
+**/.git*
+opl/INSTALL

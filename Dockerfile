@@ -1,7 +1,7 @@
 FROM ubuntu:24.04 AS webwork2
 
 ENV WEBWORK_URL=/webwork2
-ENV WEBWORK_ROOT_URL=http://localhost::8080
+ENV WEBWORK_ROOT_URL=http://localhost:8080
 ENV WEBWORK_SMTP_SERVER=localhost
 ENV WEBWORK_TIMEZONE=America/New_York
 ENV APP_ROOT=/opt/webwork

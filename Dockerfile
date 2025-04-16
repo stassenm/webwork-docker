@@ -3,12 +3,16 @@ FROM ubuntu:24.04 AS webwork2
 ENV WEBWORK_URL=/webwork2
 ENV WEBWORK_ROOT_URL=http://localhost::8080
 ENV WEBWORK_SMTP_SERVER=localhost
-#ENV	WEBWORK_SMTP_SENDER=webwork@example.edu
 ENV WEBWORK_TIMEZONE=America/New_York
 ENV APP_ROOT=/opt/webwork
 ENV WEBWORK_ROOT=$APP_ROOT/webwork2
 ENV PG_ROOT=$APP_ROOT/pg
-#ENV PATH=$PATH:$APP_ROOT/webwork2/bin
+
+ENV SSL=0
+ENV PAPERSIZE=letter
+ENV SYSTEM_TIMEZONE=UTC
+ENV ADD_LOCALES=0
+ENV ADD_APT_PACKAGES=0
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG DEBCONF_NONINTERACTIVE_SEEN=true
@@ -143,44 +147,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN cpanm install -n \
 	Statistics::R::IO \
 	DBD::MariaDB \
-	Perl::Tidy \
+	Perl::Tidy@20240903 \
 	Archive::Zip::SimpleZip \
 	&& rm -fr ./cpanm /root/.cpanm /tmp/*
 
-ARG OPL=opl
-# Set up the OPL
-COPY --link $OPL $APP_ROOT/libraries/webwork-open-problem-library
-COPY OPL_data/webwork-open-problem-library/JSON-SAVED $APP_ROOT/libraries/webwork-open-problem-library/JSON-SAVED
-COPY OPL_data/webwork-open-problem-library/TABLE-DUMP $APP_ROOT/libraries/webwork-open-problem-library/TABLE-DUMP
-COPY OPL_data/Restore_or_build_OPL_tables $APP_ROOT/libraries/Restore_or_build_OPL_tables
-
-COPY --link webwork2 $APP_ROOT/webwork2
-COPY --link pg $APP_ROOT/pg
-
 RUN mkdir -p /www/www/html
 
-RUN mkdir -p $APP_ROOT/courses
-RUN chown www-data $APP_ROOT/courses
-RUN chmod -R u+w $APP_ROOT/courses
-VOLUME $APP_ROOT/courses
-
-#VOLUME /tmp
-# ==================================================================
-# Phase 6 - System configuration
-
-# 1. Setup PATH.
-# 2. Create the webwork2 PID directory and the /etc/ssl/local directory in case it is needed.
-# 3. Perform initial permissions setup for material INSIDE the image.
-# 4. Build standard locales.
-# 5. Set the default system timezone to be UTC.
-# 6. Install third party javascript files.
-# 7. Apply patches
-
-# Patch files that are applied below
-COPY webwork2/docker-config/pgfsys-dvisvmg-bbox-fix.patch /tmp
-
-RUN echo "PATH=$PATH:$APP_ROOT/webwork2/bin" >> /root/.bashrc
-
+# Create the /etc/ssl/local directory in case it is needed.
 RUN mkdir /etc/ssl/local
 RUN chown www-data /etc/ssl/local
 RUN chmod -R u+w /etc/ssl/local
@@ -191,17 +164,33 @@ RUN echo "en_US ISO-8859-1\nen_US.UTF-8 UTF-8" > /etc/locale.gen \
 	&& rm /etc/localtime /etc/timezone && echo "Etc/UTC" > /etc/timezone \
 	&& dpkg-reconfigure -f noninteractive tzdata
 
-RUN mkdir /run/webwork2
+RUN mkdir -p $APP_ROOT/courses
+RUN chown www-data $APP_ROOT/courses
+RUN chmod -R u+w $APP_ROOT/courses
+VOLUME $APP_ROOT/courses
+
+RUN mkdir -p /run/webwork2
 RUN chown www-data /run/webwork2
 RUN chmod -R u+w /run/webwork2
 
+# Set up the OPL
+ARG OPL=opl
+COPY --link $OPL $APP_ROOT/libraries/webwork-open-problem-library
+COPY OPL_data/webwork-open-problem-library/JSON-SAVED $APP_ROOT/libraries/webwork-open-problem-library/JSON-SAVED
+COPY OPL_data/webwork-open-problem-library/TABLE-DUMP $APP_ROOT/libraries/webwork-open-problem-library/TABLE-DUMP
+COPY OPL_data/Restore_or_build_OPL_tables $APP_ROOT/libraries/Restore_or_build_OPL_tables
+
+# Set up webwork2
+COPY --link webwork2 $APP_ROOT/webwork2
 RUN cd $APP_ROOT/webwork2/ \
 		&& chown www-data DATA logs tmp \
 		&& chmod -R u+w DATA logs tmp
-
 RUN cd $WEBWORK_ROOT/htdocs \
 		&& npm install
 
+# Set up pg
+COPY --link pg $APP_ROOT/pg
+COPY webwork2/docker-config/pgfsys-dvisvmg-bbox-fix.patch /tmp
 RUN cd $PG_ROOT/htdocs \
 		&& npm install \
 		&& patch -p1 -d / < /tmp/pgfsys-dvisvmg-bbox-fix.patch \
@@ -209,18 +198,8 @@ RUN cd $PG_ROOT/htdocs \
 
 EXPOSE 8080
 WORKDIR $WEBWORK_ROOT
-
+RUN echo "PATH=$PATH:$APP_ROOT/webwork2/bin" >> /root/.bashrc
 COPY webwork2/docker-config/docker-entrypoint.sh /usr/local/bin/
-
 ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Add enviroment variables to control some things during container startup
-ENV SSL=0 \
-	PAPERSIZE=letter \
-	SYSTEM_TIMEZONE=UTC \
-	ADD_LOCALES=0 \
-	ADD_APT_PACKAGES=0
-
-# ================================================
 
 CMD ["sudo", "-E", "-u", "www-data", "hypnotoad", "-f", "bin/webwork2"]

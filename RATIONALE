@@ -1,0 +1,79 @@
+# Why webwork-docker?
+
+Ideally, it should be easy to clone Webwork and get a local copy running in Docker for testing. The current process, however, works if you've done it before and know what you are doing, but is opaque to anyone new.  The only directions are in the webwork2 wiki, but they are woefully out of date.
+
+A few past discussions of some of the issues:
+
+* [Docker Installation Documentation](https://webwork.maa.org/moodle/mod/forum/discuss.php?d=8605)
+* [Discussions about Docker...#972](https://github.com/openwebwork/webwork2/pull/972)
+* [Update docker-entrypoint.sh #1681](https://github.com/openwebwork/webwork2/pull/1681)
+* [Changes to Docker setup + moving the files to a different repository #1683](https://github.com/openwebwork/webwork2/discussions/1683)
+
+In the process of reading the wiki, discussions, and Docker documentation to set up a webwork container, an initial plan to improve the documentation grew into an attempt to provide a better Docker setup for WeBWorK that includes improvements to a number of shortcomings (see below) of the current setup.
+
+## Issues with the build process
+
+### Needed files are hidden
+
+Webwork is made up of 3 parts, each in its own repository, [webwork2](https://github.com/openwebwork/webwork2), [pg](https://github.com/openwebwork/pg), and [webwork-open-problem-library](https://github.com/openwebwork/webwork-open-problem-library) (the OPL).  Setting up a Docker container for webwork requires all 3 parts, but in the current [openwebwork](https://github.com/openwebwork) setup, the Docker files are in the webwork2 repository.  The needed compose.yaml file needs to be copied from webwork2/docker-config/docker-compose.dist.yml, which isn't documented.
+
+**Solution:** Move the Docker setup to its own folder/repository.  Clone the webwork2, pg, and webwork-open-problem-library repositories into subdirectories.
+
+### The current process is inefficient
+
+It goes like this:
+
+* Clone webwork2 from github
+* Copy webwork2/docker-config/docker-compose.dist.yml to webwork2/docker-compose.yml (undocumented)
+* The Docker build process clones webwork2, pg, and OPL into the stage 1 image, then deletes the .git folders
+* Stage 2 copies webwork2, pg, and OPL from stage 1 into a second image.
+
+There are numerous problems here.  First, the obvious: You clone all of webwork2 to get 2 or 3 Docker files -- Dockerfile (or DockerfileStage1 and DockerfileStage2) and compose.yaml -- that then clone all of webwork2 again when you build the image.  Second, the build process clones all 3 parts, then copies all 3 parts.  The intent appears to be to save space in the final image by leaving out git and the .git folders, but you end up with 3 copies of webwork2 plus 2 copies of pg and webwork-open-problem-library.
+
+### Using `git clone` in the build process is problematic
+
+* If you have Docker build again, the `git clone` command is unchanged, so nothing happens.  The cached image from the first build is used.
+* If you build with with the `--no-cache` option, *everything* is rebuilt.  All 3 parts -- webwork2, pg, and the OPL -- are cloned from github and copied again.
+
+This means there is no way to update one of the 3 parts without rebuilding the others.
+
+Furthermore, this is not conducive to local development work.  The default build process clones from openwebwork github, so any changes you've made in a local repository are ignored. You either have to modify the build process to clone from your local sources (not documented), or make changes in the running container. Changes in the container disappear the moment you bring the container down, however, and git is not in the container.
+
+**Solution:** Clone webwork2, pg, and OPL from github first, separate from the Docker build process, and have docker COPY them into the image.  Put .git in the .dockerignore file to leave out the .git folders in the copies.  Docker will see if you make changes to webwork2, pg, or the OPL, so it will copy changes on a rebuild, but use cache for things that haven't changed.  The development process becomes:
+
+* Switch branches in the local webwork2, pg, or opl repositories, as needed
+* Make the changes you want to test in the local webwork2, pg, or opl repositories
+* `docker compose build`
+* `docker compose up`
+* Test the changes in the running container
+* `docker compose down`
+
+Repeat as needed.
+
+### 3 Dockerfiles is unnecessary and confusing
+
+Splitting Dockerfile into DockerfileStage1 and DockerfileStage2 accomplishes nothing.  The number of Docker build stages is determined by the number of From: statements, not the number of Dockerfiles.  Also, with 3 build files, changes to the Docker build process need to be maintained in two places.
+
+**Solution:** Remove DockerfileStage1 and DockerfileStage2.
+
+### OPL metadata and db tables are downloaded and restored at container startup, every time
+
+This slows startup. This would be better done at build time rather than at container start.
+
+**Solution:** Download metadata and db tables in advance, then COPY them into a persistent volume.  This way, the OPL build is preserved in the image, which will load from cache, unless the local copy of the OPL is changed.
+
+### Webwork writes to the container's write layer, which does not persist
+
+**Solution:** Mount named volumes for directories that should persist.
+
+## MariaDB is outdated
+
+Specified version of mariadb, 10.4, is from 2019, and hasn't been maintained since June 2024. The current 10-series version is 10.11.  Current mariadb version is 11.4/7.
+
+**Solution:** Remove the 10.4 spec to use the latest mariadb.
+
+## Rserve is outdated
+
+ubcctlt/rserve includes R 4.0.4 from 2021-02-15, and is built only for x86_64-pc-linux-gnu, which means it runs in emulation on Macs.
+
+**Solution:** Build a local Rserve image.

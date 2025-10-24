@@ -83,7 +83,7 @@ Docker containers start up from the built image.  In general, changes made in a 
 
 To test changes to anything in webwork2, pg, or the OPL, you should make those changes in their respective directories in the webwork-docker folder, then run `docker compose build` again to update the docker image, then `docker compose up` to run the updated container with your changes.
 
-The `docker_setup.pl` script checked out webwork2 and pg on their respective main branches. Development work should usually be done on a branch of your personal fork of the the `develop` branch of webwork2 or pg.  See:
+The `docker_setup.pl` script checked out webwork2 and pg on their respective main branches. Development work should usually be done on a branch of your personal fork of the `develop` branch of webwork2 or pg.  See:
 
 * [First Time Setup](https://github.com/openwebwork/webwork2/wiki/First-Time-Setup)
 * [Coding and Workflow](https://github.com/openwebwork/webwork2/wiki/Coding-and-Workflow)

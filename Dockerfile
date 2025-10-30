@@ -176,7 +176,7 @@ RUN chmod -R u+w /run/webwork2
 # Set up the OPL
 ARG OPL=opl
 COPY --link $OPL $APP_ROOT/libraries/webwork-open-problem-library
-COPY OPL_data/webwork-open-problem-library/JSON-SAVED $APP_ROOT/libraries/webwork-open-problem-library/JSON-SAVED
+COPY OPL_data/webwork-open-problem-library/JSON-SAVED $WEBWORK_ROOT/htdocs/DATA
 COPY OPL_data/webwork-open-problem-library/TABLE-DUMP $APP_ROOT/libraries/webwork-open-problem-library/TABLE-DUMP
 COPY OPL_data/Restore_or_build_OPL_tables $APP_ROOT/libraries/Restore_or_build_OPL_tables
 
@@ -190,7 +190,7 @@ RUN cd $WEBWORK_ROOT/htdocs \
 
 # Set up pg
 COPY --link pg $APP_ROOT/pg
-COPY webwork2/docker-config/pgfsys-dvisvmg-bbox-fix.patch /tmp
+COPY patches/pgfsys-dvisvmg-bbox-fix.patch /tmp
 RUN cd $PG_ROOT/htdocs \
 		&& npm install \
 		&& patch -p1 -d / < /tmp/pgfsys-dvisvmg-bbox-fix.patch \
@@ -199,7 +199,7 @@ RUN cd $PG_ROOT/htdocs \
 EXPOSE 8080
 WORKDIR $WEBWORK_ROOT
 RUN echo "PATH=$PATH:$APP_ROOT/webwork2/bin" >> /root/.bashrc
-COPY webwork2/docker-config/docker-entrypoint.sh /usr/local/bin/
+COPY docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 CMD ["sudo", "-E", "-u", "www-data", "hypnotoad", "-f", "bin/webwork2"]

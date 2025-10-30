@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
 
-# This script downloads the latest OPL metadata release, and restores the database dump file in that release.
+# This script clones webwork2, pg, and the OPL, then downloads the 
+# latest OPL metadata release and restores the database dump file 
+# in that release, then creates a .env file. 
 
 use feature say;
 use strict;
@@ -71,12 +73,13 @@ else
 }
 print "\n";
 
-## Download the latest OPL metadata release, and restore the database dump file in that release.
+## Download the latest OPL metadata release.
 ## Based on webwork2/bin/download-OPL-metadata-release.pl
 
 # Store the metadata and table-dump file in a separate folder, OPL_data, outside of the OPL, so that git doesn't
-# see it inside the OPL.  Docker will copy from OPL_data to the JSON-SAVED and TABLE-DUMP folders at
-# build time, then docker-entrypoint.sh will copy from JSON-SAVED to htdocs/DATA and run restore-OPL-tables.pl.
+# see it inside the OPL.  Docker will copy the metadata json files to htdocs/DATA and the table-dump file to 
+# $APP_ROOT/libraries/webwork-open-problem-library/TABLE-DUMP at build time,
+# At container start, docker-entrypoint.sh will run restore-OPL-tables.pl to restore the db from the table-dump file.
 my $OPL_data = 'OPL_data';
 die "Couldn't make $OPL_data\n" unless (-d $OPL_data || mkpath($OPL_data));
 
@@ -169,5 +172,5 @@ say '  If you make changes (including changing the branch) to anything in';
 say '   webwork2, pg, or the OPL, you need to run `docker compose build` again';
 say '   to update the docker image.';
 say '* Run `docker compose up -d` in this folder to start the WeBWorK container.';
-say '* Run `docker compose down` in this folder to shut down the WeBWorK container.';
+say '* Run `docker compose down` in this folder to stop the WeBWorK container.';
 1;

@@ -112,7 +112,11 @@ services:
       #WEBWORK_TIMEZONE: America/New_York
 
   r:
-    image: ubcctlt/rserve
+    container_name: rserve
+    build:
+      dockerfile: ./rserve.Dockerfile
+      args:
+      - ADDITIONAL_R_PACKAGES=${ADD_R_PACKAGES}
     volumes:
     - rserve_data:/localdata
     # The R server need not be available from outside the local Docker network.

@@ -157,6 +157,10 @@ else
 	print ENVFILE "WEBWORK2_HTTP_PORT_ON_HOST=8080\n";
 	print ENVFILE "WEBWORK_DB_USER=webworkWrite\n";
 	print ENVFILE "WEBWORK_DB_PASSWORD='$pass'\n";
+	print ENVFILE "\n";
+	print ENVFILE "# Additional R packages from CRAN to be installed at build time:\n";
+	print ENVFILE "#ADD_R_PACKAGES='leaps tree glmnet lars adabag lmerTest ggplot2 visreg vegan mclust'\n";
+	print ENVFILE "ADD_R_PACKAGES=''\n";
 	close ENVFILE;
 }
 print "\n";

@@ -72,13 +72,12 @@ for i in site.conf localOverrides.conf; do
 done
 
 # Create the admin course if it does not exist.
-# Check first if the admin courses directory exists then check that at least one
-# of the tables associated with the course (the admin_user table) exists.
+# Check first if the admin courses directory exists then check that the admin_user table exists.
 #
 # The check for the database tables for the admin course is neccessary for the
 # following situation. In rebuilding a docker box one might clear out the docker
-# containers, images and volumes including mariaDB, BUT leave the contents of
-# ww-docker-data directory in place.  It now holds the shell of the courses
+# containers, images and volumes including mariaDB, BUT leave the contents of the
+# courses directory in place.  It now holds the shell of the courses
 # including the admin course directory. This means that once you rebuild the box
 # you can't access the admin course (because the admin_user table is missing)
 # and you need to run bin/upgrade_admin_db.pl from inside the container.  This
@@ -134,6 +133,7 @@ if [ ! -f "$APP_ROOT/courses/adminClasslist.lst"  ]; then
 	cp *.lst $APP_ROOT/courses/
 fi
 
+# Update the OPL tables, if requested
 if [ -f "$APP_ROOT/libraries/Restore_or_build_OPL_tables" ]; then
 	if [ -f "$APP_ROOT/libraries/webwork-open-problem-library/TABLE-DUMP/OPL-tables.sql" ]; then
 		echo "Restoring OPL tables from the TABLE-DUMP/OPL-tables.sql file"
@@ -158,46 +158,17 @@ fi
 echo "Fixing ownership and permissions (just in case it is needed)"
 cd $WEBWORK_ROOT
 
-# Minimal chown/chmod code - moves the critical parts which were in blocks below
-# to here, but SKIPS handling htdocs/tmp and ../courses for the chmod line, and
-# SKIPS the deletion of symbolic links.  This change significantly speeds up
-# Docker startup time on production servers with many files/courses.
-
+# Minimal chown/chmod code for the critical directories.
 chown -R www-data:www-data logs tmp DATA
 chmod -R ug+w logs tmp DATA
 chown  www-data:www-data htdocs/tmp
 chmod ug+w htdocs/tmp
 
-# Even if the admin and courses directories already existed their permissions
+# Even if the admin and courses directories already existed, their permissions
 # might not be correct.
 chown www-data:www-data  $APP_ROOT/courses
 chown www-data:www-data  $APP_ROOT/courses/admin
 chown www-data:www-data  $APP_ROOT/courses/admin/*
-
-# Symbolic links which have no target outside the Docker container
-# cause problems during the rebuild process on some systems.
-# So we delete them. They will be rebuilt automatically when needed again
-# at the cost of some speed.
-
-# The following 3 lines (find, chown, chmod) make Docker startup quite slow and
-# have been commented out.  Developers who encounter permission issues may want
-# to re-enable these lines.
-
-#find htdocs/tmp -type l -exec rm -f {} \;
-#chown -R www-data:www-data htdocs/tmp
-#chmod -R u+w ../courses htdocs/tmp
-
-# The chown for files/directories under courses is done using find, as
-# using a simple "chown -R www-data $APP_ROOT/courses" would sometimes
-# cause errors in Docker on Mac OS X when there was a broken symbolic link
-# somewhere in the directory tree being processed.
-
-# The following 3 lines (cd, find, find) make Docker startup quite slow.
-# Developers who encounter permission issues may want to re-enable these lines.
-
-#cd $APP_ROOT
-#find courses -type f -exec chown www-data:www-data {} \;
-#find courses -type d -exec chown www-data:www-data {} \;
 
 echo "End fixing ownership and permissions"
 

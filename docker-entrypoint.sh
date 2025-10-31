@@ -35,12 +35,6 @@ echo "libpaper1 libpaper/defaultpaper select $PAPERSIZE\nlibpaper1:amd64 libpape
 debconf-set-selections /tmp/preseed.txt
 dpkg-reconfigure -f noninteractive libpaper1
 
-# Install some extra packages
-if [ "$ADD_APT_PACKAGES" != "0" ]; then
-	apt-get update
-	apt-get install -y --no-install-recommends --no-install-suggests $ADD_APT_PACKAGES
-fi
-
 # generate conf files if not exist
 for i in site.conf localOverrides.conf; do
 	if [ ! -f $WEBWORK_ROOT/conf/$i ]; then

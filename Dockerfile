@@ -1,5 +1,7 @@
 FROM ubuntu:24.04 AS webwork2
 
+# These default environment values can be overridden in .env
+# Don't change them here.
 ENV WEBWORK_URL=/webwork2
 ENV WEBWORK_ROOT_URL=http://localhost:8080
 ENV WEBWORK_SMTP_SERVER=localhost
@@ -14,8 +16,9 @@ ENV SYSTEM_TIMEZONE=UTC
 ENV ADD_LOCALES=0
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG DEBCONF_NONINTERACTIVE_SEEN=true
-ARG ADDITIONAL_BASE_IMAGE_PACKAGES
+ARG DEBCONF_NONINTERACTIVE_SEEN=true 
+
+# Install needed packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	apt-utils \
 	ca-certificates \
@@ -136,11 +139,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	texlive-science \
 	texlive-xetex \
 	tzdata \
-	zip $ADDITIONAL_BASE_IMAGE_PACKAGES \
-	&& curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+	zip \
+	&& apt-get clean
+
+# Install nodejs
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 	&& apt-get install -y --no-install-recommends nodejs \
-	&& apt-get clean \
-	&& rm -fr /var/lib/apt/lists/* /tmp/*
+	&& apt-get clean
+
+# ADDITIONAL_BASE_IMAGE_PACKAGES gets its value from environment 
+# variable ADD_BASE_PACKAGES.
+# Set ADD_BASE_PACKAGES in .env to the list of any additional packages
+# to be installed in the build stage.  
+ARG ADDITIONAL_BASE_IMAGE_PACKAGES
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	$ADDITIONAL_BASE_IMAGE_PACKAGES \
+	&& apt-get clean
+
+# Clean up
+RUN	rm -fr /var/lib/apt/lists/* /tmp/*
 
 # Install additional Perl modules from CPAN that are not packaged for Ubuntu or are outdated in Ubuntu.
 RUN cpanm install -n \

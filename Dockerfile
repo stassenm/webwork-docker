@@ -147,6 +147,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 	&& apt-get install -y --no-install-recommends nodejs \
 	&& apt-get clean
 
+# Install additional Perl modules from CPAN that are not packaged for Ubuntu or are outdated in Ubuntu.
+RUN cpanm install -n \
+	Statistics::R::IO \
+	DBD::MariaDB \
+	Perl::Tidy@20240903 \
+	Archive::Zip::SimpleZip \
+	&& rm -fr ./cpanm /root/.cpanm /tmp/*
+
 # ADDITIONAL_BASE_IMAGE_PACKAGES gets its value from environment 
 # variable ADD_BASE_PACKAGES.
 # Set ADD_BASE_PACKAGES in .env to the list of any additional packages
@@ -158,14 +166,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Clean up
 RUN	rm -fr /var/lib/apt/lists/* /tmp/*
-
-# Install additional Perl modules from CPAN that are not packaged for Ubuntu or are outdated in Ubuntu.
-RUN cpanm install -n \
-	Statistics::R::IO \
-	DBD::MariaDB \
-	Perl::Tidy@20240903 \
-	Archive::Zip::SimpleZip \
-	&& rm -fr ./cpanm /root/.cpanm /tmp/*
 
 RUN mkdir -p /www/www/html
 

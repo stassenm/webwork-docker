@@ -170,9 +170,10 @@ RUN	rm -fr /var/lib/apt/lists/* /tmp/*
 RUN mkdir -p /www/www/html
 
 # Create the /etc/ssl/local directory in case it is needed.
-RUN mkdir /etc/ssl/local
+COPY --link config/ssl /etc/ssl/local
 RUN chown www-data /etc/ssl/local
 RUN chmod -R u+w /etc/ssl/local
+
 RUN echo "en_US ISO-8859-1\nen_US.UTF-8 UTF-8" > /etc/locale.gen \
 	&& /usr/sbin/locale-gen \
 	&& echo "locales locales/default_environment_locale select en_US.UTF-8\ndebconf debconf/frontend select Noninteractive" > /tmp/preseed.txt \

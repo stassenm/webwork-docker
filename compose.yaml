@@ -1,15 +1,12 @@
 services:
   db:
-    image: mariadb:10.11
-    container_name: webwork2_db_1
+    image: mariadb:${MARIADB_VERSION}
+    container_name: ${WEBWORK_DB_CONTAINER}
 
     volumes:
       - webwork2_mysql:/var/lib/mysql
-#      - type: bind
-#        source: webwork2/docker-config/db/mariadb.cnf
-#        target: /etc/mysql/conf.d/mariadb.cnf
       - type: bind
-        source: webwork2/docker-config/db/mariadb.cnf
+        source: config/db/mariadb.cnf
         target: /etc/mysql/mariadb.cnf
 
     restart: always
@@ -19,97 +16,36 @@ services:
       MARIADB_RANDOM_ROOT_PASSWORD: 1
 
       # When the MariaDB container is first started it will create
-      # the WW database and WW DB user based on:
-      MYSQL_DATABASE: webwork
+      # the webwork database and webwork DB user based on:
+      MYSQL_DATABASE: ${WEBWORK_DB_NAME}
       MYSQL_USER: ${WEBWORK_DB_USER}
       MYSQL_PASSWORD: ${WEBWORK_DB_PASSWORD}
 
-      # A timezone for the DB server can be set:
-      #TZ: zone/city
-      # where zone/city must be a valid setting.
-      # "/usr/bin/timedatectl list-timezones" on an Ubuntu system with
-      # that tool installed will find valid values.
-      # See: https://stackoverflow.com/questions/39172652/using-docker-compose-to-set-containers-timezones
-
   app:
     # Set a fixed container name, so it does not depend on the directory name
-    container_name: webwork2_app_1
+    container_name: ${WEBWORK_APP_CONTAINER}
+    env_file:
+      - .env
     build:
       context: .
       args:
       - OPL=${OPL_PATH}
-      #- ADDITIONAL_BASE_IMAGE_PACKAGES='nano less'
+      - ADDITIONAL_BASE_IMAGE_PACKAGES=${ADD_BASE_PACKAGES}
     depends_on:
       - db
       - r
     volumes:
-      - webwork2_courses:/opt/webwork/courses
-      - webwork2_htdocs:/opt/webwork/webwork2/htdocs
-      - webwork2_conf:/opt/webwork2/conf
-      - pg_htdocs:/opt/webwork/pg/htdocs
+      - webwork2_courses:${APP_ROOT}/courses
+      - webwork2_htdocs:${WEBWORK_ROOT}/htdocs
+      - webwork2_conf:${WEBWORK_ROOT}/conf
+      - pg_htdocs:${PG_ROOT}/htdocs
 
-      # OR use the following mount if the hosts have different courses on them:
-      #- "/per_host_data_path/courses/:/opt/webwork/courses/"
-
-      # ======================================================================
-
-      # Mojolicious webwork2 app configuration.  For production you will need to modify this file.
-      # Note that the SSL configuration is done in this file.
-      # See https://docs.mojolicious.org/Mojo/Server/Daemon#listen for how to do this.
-      #- "/per_host_conf_path/conf/webwork2.mojolicious.yml:/opt/webwork/webwork2/conf/webwork2.mojolicious.yml"
-
-      # SSL certificates (subdirectory with certificate and key)
-      # Place your ssl certificate files used in webwork2.mojolicious.yml above in docker-config/ssl,
-      # or change the mount location to where your ssl certificate files reside.
-      #- "./docker-config/ssl/:/etc/ssl/local"
-
-    hostname: myhost.mydomain.edu
-
+    hostname: ${WEBWORK_HOSTNAME}
     ports:
-      # For a personal machine
       - ${WEBWORK2_HTTP_PORT_ON_HOST}:8080
-
-    # For a production machine
-    #restart: always
+    restart: $RESTART
     stop_signal: SIGWINCH
     stop_grace_period: 30s
-
-    environment:
-      WEBWORK_DB_DRIVER: MariaDB
-      WEBWORK_DB_HOST: db
-      WEBWORK_DB_PORT: 3306
-      WEBWORK_DB_NAME: webwork
-      WEBWORK_DB_USER: ${WEBWORK_DB_USER}
-      WEBWORK_DB_PASSWORD: ${WEBWORK_DB_PASSWORD}
-
-      # Control settings for error message handling by webwork2/lib/WeBWorK.pm
-      # The standard behavior is with both of these set to 0
-      MIN_HTML_ERRORS: 0
-      JSON_ERROR_LOG: 0
-
-      # Set paper size
-      PAPERSIZE: 'letter'
-      #PAPERSIZE='a4'
-
-      # Use to build additional locales in the running container at startup. Ex:
-      #ADD_LOCALES: "he_IL ISO-8859-8\nhe_IL.UTF-8 UTF-8\n"
-
-      # The system timezone for the container can be set using
-      #SYSTEM_TIMEZONE: zone/city
-      # where zone/city must be a valid setting.
-      # "/usr/bin/timedatectl list-timezones" on an Ubuntu system with
-      # that tool installed will find valid values.
-
-      # =======================================================
-      # To turn on SSL in the running container
-      #SSL: 1
-
-      # If you use https below, make sure to set up the certificate and SSL configuration
-      # Note if your server uses a non-standard port, that should also be included.
-      #WEBWORK_ROOT_URL: https://myhost.mydomain.edu
-      #WEBWORK_SMTP_SERVER: smtp.mydomain.edu
-      #WEBWORK_SMTP_SENDER: support@mydomain.edu
-      #WEBWORK_TIMEZONE: America/New_York
 
   r:
     container_name: rserve
@@ -119,9 +55,6 @@ services:
       - ADDITIONAL_R_PACKAGES=${ADD_R_PACKAGES}
     volumes:
     - rserve_data:/localdata
-    # The R server need not be available from outside the local Docker network.
-    #ports:
-    #  - "6311:6311"
 
 volumes:
   webwork2_mysql:

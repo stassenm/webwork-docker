@@ -153,19 +153,42 @@ else
 	say "Writing environment file .env for the docker build process, with a randomly";
 	say 'generated password for the webwork db.';
 	open(ENVFILE, '>.env') || die "Couldn't open file .env, $!";
+	print ENVFILE "# Environment variables set here control the docker build process\n";
+	print ENVFILE "# and the webwork environment in the running container.  Make any \n";
+	print ENVFILE "# desired changes here, then rebuild the container with\n";
+	print ENVFILE "# `docker compose build`\n";
+	print ENVFILE "\n";
+	print ENVFILE "# Path to the open problem library in webwork-docker, set by docker_setup.pl\n";
 	print ENVFILE "OPL_PATH=$OPL\n";
-	print ENVFILE "WEBWORK2_HTTP_PORT_ON_HOST=8080\n";
+	print ENVFILE "# The webwork db user and password are set on the container's first run.\n";
+	print ENVFILE "# Changing them in .env does not change them in the container.\n";
+	print ENVFILE "# If you change them in the container, however, be sure to change them\n";
+	print ENVFILE "# in .env to match.\n";
 	print ENVFILE "WEBWORK_DB_USER=webworkWrite\n";
 	print ENVFILE "WEBWORK_DB_PASSWORD='$pass'\n";
-	print ENVFILE "\n";
-	print ENVFILE "# Additional R packages from CRAN to be installed at build time:\n";
-	print ENVFILE "#ADD_R_PACKAGES='leaps tree glmnet lars adabag lmerTest ggplot2 visreg vegan mclust'\n";
-	print ENVFILE "ADD_R_PACKAGES=''\n";
+
+	if (-f '.env.def')
+	{
+		open(ENVDEF, '<.env.def' || die "Couldn't open .env.def\n");
+		my $line;
+		while ($line = <ENVDEF>)
+		{
+			next if $line =~ /^##/;
+			print ENVFILE "$line";
+		}
+		close ENVDEF;
+	}
+	else
+	{
+		print ENVFILE "WEBWORK2_HTTP_PORT_ON_HOST=8080\n";
+		warn "\n!! Defaults file .env.def is missing.  No optional settings in .env!\n";
+	}
 	close ENVFILE;
 }
 print "\n";
 
 say 'Done!  Things to do:';
+say '* OPTIONAL: Edit .env to customize container settings.';
 say '* Run `docker compose build` in this folder to build the WeBWorK image.';
 say '  Note that webwork2 and pg are each on their respective main branches.';
 say '  You may change either or both branches as needed before invoking docker.';

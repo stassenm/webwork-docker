@@ -42,7 +42,7 @@ services:
 
     hostname: ${WEBWORK_HOSTNAME}
     ports:
-      - ${WEBWORK2_HTTP_PORT_ON_HOST}:8080
+      - ${WEBWORK_HOST_IP}${WEBWORK_HOST_PORT}:8080
     restart: $RESTART
     stop_signal: SIGWINCH
     stop_grace_period: 30s

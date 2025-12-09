@@ -180,7 +180,8 @@ else
 	}
 	else
 	{
-		print ENVFILE "WEBWORK2_HTTP_PORT_ON_HOST=8080\n";
+		print ENVFILE 'WEBWORK_HOST_IP="127.0.0.1:"',"\n";
+		print ENVFILE 'WEBWORK_HOST_PORT="8080"',"\n";
 		warn "\n!! Defaults file .env.def is missing.  No optional settings in .env!\n";
 	}
 	close ENVFILE;

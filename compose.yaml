@@ -1,20 +1,17 @@
 services:
   db:
-    image: mariadb:${MARIADB_VERSION}
     container_name: ${WEBWORK_DB_CONTAINER}
-
+    build:
+      dockerfile: mariadb.Dockerfile
+      args:
+      - DB_VERSION=${MARIADB_VERSION}
     volumes:
       - webwork2_mysql:/var/lib/mysql
-      - type: bind
-        source: config/db/mariadb.cnf
-        target: /etc/mysql/mariadb.cnf
-
     restart: always
     environment:
       # When the MariaDB container is first started it will set a random root password,
       # which you can find in the container logs.
       MARIADB_RANDOM_ROOT_PASSWORD: 1
-
       # When the MariaDB container is first started it will create
       # the webwork database and webwork DB user based on:
       MYSQL_DATABASE: ${WEBWORK_DB_NAME}

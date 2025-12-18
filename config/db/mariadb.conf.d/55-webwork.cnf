@@ -1,0 +1,29 @@
+# MariaDB settings for WeBWorK.
+
+[client]
+
+[mysql]
+
+[mysqld]
+
+# Increase max_connections.  Default is 151 (150 +1 for admin)
+max_connections = 500
+
+# Modify timeouts:
+#   wait_timeout (default usually 28800),
+#   interactive_timeout (default usually 28800),
+#   net_read_timeout (default usually 60)
+wait_timeout = 86400
+net_read_timeout = 3600
+
+# Be aware that this log type is a performance killer.
+# Recommend only changing this at runtime for short testing periods if needed!
+#general_log_file       = /var/log/mysql/mysql.log
+#general_log            = 1
+
+# Enable the slow query log to see queries with especially long duration
+#log_slow_query_file    = /var/log/mysql/mariadb-slow.log
+#log_slow_query_time    = 10
+#log_slow_verbosity     = query_plan,explain
+#log-queries-not-using-indexes
+#log_slow_min_examined_row_limit = 1000

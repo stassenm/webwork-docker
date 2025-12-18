@@ -1,0 +1,12 @@
+From /etc/mysql/mariadb.cnf:
+# The MariaDB/MySQL tools read configuration files in the following order:
+# 0. "/etc/mysql/my.cnf" symlinks to this file, reason why all the rest is read.
+# 1. "/etc/mysql/mariadb.cnf" (this file) to set global defaults,
+# 2. "/etc/mysql/conf.d/*.cnf" to set global options.
+# 3. "/etc/mysql/mariadb.conf.d/*.cnf" to set MariaDB-only options.
+# 4. "~/.my.cnf" to set user-specific options.
+
+Docker will copy the contents of this directory, including the mariadb.conf.d/
+subdirectory, into /etc/mysql at build time.  Best practice is to put Webwork 
+settings in mariadb.conf.d/55-webwork.cnf, which will be read after the default
+client and server settings files.

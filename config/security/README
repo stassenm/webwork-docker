@@ -1,0 +1,6 @@
+Resource limits enforced by the PAM module are set in /etc/security/limits.conf
+and in .conf files in the /etc/security/limits.d/ directory.  Best practice is
+to set limits in .conf files in limits.d, leaving the main limits.conf untouched.
+
+Docker will copy the contents of this directory, including the limits.d 
+subdirectory, into /etc/security at build time.
